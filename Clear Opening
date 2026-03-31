@@ -1,0 +1,84 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clear Opening</title>
+<style>
+body{font-family:Arial;background:#111;color:#fff;padding:20px}
+input,select{width:100%;padding:10px;margin-top:5px;margin-bottom:10px}
+.result{font-size:24px;margin-top:15px}
+button{padding:10px;width:100%;margin-top:10px}
+</style>
+</head>
+<body>
+
+<h2>Clear Opening Calculator</h2>
+
+<label>Door Size (inches)</label>
+<input id="size" placeholder="e.g. 72 or 72 1/4">
+
+<label>Door Type</label>
+<select id="type">
+<option value="permashield">Permashield</option>
+<option value="narroline2">Narroline 2-Panel</option>
+<option value="narroline4">Narroline 4-Panel</option>
+<option value="frenchwood">Frenchwood</option>
+<option value="a_series_glide">A-Series Glide</option>
+<option value="a_hinged_single">A-Series Single</option>
+<option value="a_hinged_2open">A-Series 2 Open</option>
+<option value="a_hinged_1open">A-Series 1 Open</option>
+<option value="a_hinged_3_1open">A-Series 3 Panel</option>
+</select>
+
+<div class="result" id="result">—</div>
+
+<script>
+function parse(val){
+  if(!val) return NaN;
+  if(val.includes('/')){
+    let parts = val.split(' ');
+    let whole = parseFloat(parts[0]) || 0;
+    let frac = parts[1] || parts[0];
+    let [n,d] = frac.split('/');
+    return whole + (n/d);
+  }
+  return parseFloat(val);
+}
+
+function calc(){
+  let size = parse(document.getElementById('size').value);
+  let type = document.getElementById('type').value;
+
+  if(!size) return;
+
+  let result;
+
+  switch(type){
+    case "permashield":
+    case "narroline2":
+      result = (size/2) - 7.5; break;
+    case "narroline4":
+      result = (size/2) - 13.75; break;
+    case "frenchwood":
+      result = (size/2) - 8.368; break;
+    case "a_series_glide":
+      result = (size/2) - 7.773; break;
+    case "a_hinged_single":
+      result = size - 5.799; break;
+    case "a_hinged_2open":
+      result = size - 7.477; break;
+    case "a_hinged_1open":
+      result = (size - 8.992)/2; break;
+    case "a_hinged_3_1open":
+      result = (size - 12.072)/3; break;
+  }
+
+  document.getElementById('result').innerText = result.toFixed(3) + '"';
+}
+
+document.getElementById('size').addEventListener('input', calc);
+document.getElementById('type').addEventListener('change', calc);
+</script>
+
+</body>
+</html>
