@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Clear Opening Calculator</title>
+  <meta name="theme-color" content="#0b0c10" />
+  <style>
+    :root{
+      --bg:#0b0c10; --card:#12141a; --muted:#a7b0c0; --text:#eef2ff;
+      --line:#23283a; --chip:#1a1f2e; --accent:#7aa2ff;
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      background:linear-gradient(180deg,#0b0c10,#07080b);
+      color:var(--text);
+    }
+    header{
+      position:sticky;top:0;z-index:5;
+      background:rgba(11,12,16,.86);
+      backdrop-filter:blur(10px);
+      border-bottom:1px solid var(--line)
+    }
+    .wrap{max-width:720px;margin:0 auto;padding:14px 14px 28px}
+    .top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+    h1{font-size:20px;margin:0}
+    .sub{margin:4px 0 0;color:var(--muted);font-size:12px;line-height:1.35}
+
+    .card{
+      margin-top:14px;
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      padding:14px;
+      box-shadow:0 8px 24px rgba(0,0,0,.35)
+    }
+    .card h2{font-size:15px;margin:0 0 10px}
+
+    .grid{display:grid;gap:10px}
+    .row{display:grid;gap:10px}
+    @media(min-width:720px){.row.two{grid-template-columns:1fr 1fr}}
+
+    label{display:block;font-size:12px;color:var(--muted);margin:0 0 6px}
+    input, select{
+      width:100%;
+      padding:12px 12px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:#0f1117;
+      color:var(--text);
+      font-size:15px;
+      outline:none
+    }
+    input:focus,select:focus{
+      border-color:rgba(122,162,255,.7);
+      box-shadow:0 0 0 3px rgba(122,162,255,.18)
+    }
+
+    .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .chip{
+      border:1px solid var(--line);
+      background:var(--chip);
+      color:var(--text);
+      padding:8px 10px;
+      border-radius:999px;
+      font-size:12px;
+      cursor:pointer;
+      user-select:none
+    }
+
+    .out{margin-top:12px;border-top:1px solid var(--line);padding-top:12px}
+    .kv{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:12px 10px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:#0f1117
+    }
+    .k{font-size:12px;color:var(--muted)}
+    .v{font-size:18px;font-variant-numeric:tabular-nums}
+
+    .actions{display:flex;gap:10px;margin-top:12px}
+    .btn{
+      flex:1;
+      border:1px solid var(--line);
+      background:var(--chip);
+      color:var(--text);
+      padding:12px;
+      border-radius:14px;
+      font-size:14px;
+      cursor:pointer
+    }
+    .btn.primary{border-color:rgba(122,162,255,.55);background:rgba(122,162,255,.12)}
+
+    .hint{margin-top:10px;color:var(--muted);font-size:12px;line-height:1.35}
+
+    .toggle{display:flex;gap:8px;align-items:center;justify-content:flex-end}
+    .toggle label{margin:0;color:var(--muted);font-size:12px}
+    .seg{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+    .seg button{
+      border:0;background:transparent;color:var(--text);
+      padding:7px 10px;font-size:12px;cursor:pointer
+    }
+    .seg button[aria-pressed="true"]{background:rgba(122,162,255,.16)}
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <h1>Clear Opening Calculator</h1>
+        <div class="sub">Inputs and results accept construction fractions like <b>72 1/4</b>, <b>3/16</b>, or <b>72.25</b>.</div>
+      </div>
+      <div class="toggle" aria-label="Rounding">
+        <label>Round to</label>
+        <div class="seg">
+          <button id="round8" aria-pressed="true">1/8</button>
+          <button id="round16" aria-pressed="false">1/16</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="card">
+    <h2>Clear Opening</h2>
+    <div class="grid">
+      <div class="row two">
+        <div>
+          <label>Door make size (in)</label>
+          <input id="cl_size" placeholder='e.g., 72' />
+          <div class="chips" data-for="cl_size"></div>
+        </div>
+        <div>
+          <label>Door type</label>
+          <select id="cl_type"></select>
+        </div>
+      </div>
+
+      <div class="out">
+        <div class="kv">
+          <div class="k">Clear opening</div>
+          <div class="v" id="cl_out">—</div>
+        </div>
+        <div class="actions">
+          <button class="btn" id="resetBtn">Reset</button>
+          <button class="btn primary" id="copyBtn">Copy result</button>
+        </div>
+        <div class="hint">Result is rounded to the selected fraction step.</div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+  function parseInches(input){
+    if(input == null) return NaN;
+    const s0 = String(input).trim();
+    if(!s0) return NaN;
+    const s = s0.replace(/-/g,' ').replace(/\s+/g,' ');
+
+    if(/^[-+]?\d*(?:\.\d+)?$/.test(s)){
+      const n = Number(s);
+      return isFinite(n) ? n : NaN;
+    }
+
+    const mixed = s.match(/^([-+]?\d+)\s+(\d+)\/(\d+)$/);
+    if(mixed){
+      const whole = Number(mixed[1]);
+      const num = Number(mixed[2]);
+      const den = Number(mixed[3]);
+      if(!den) return NaN;
+      const frac = num/den;
+      return whole >= 0 ? (whole + frac) : (whole - frac);
+    }
+
+    const fracOnly = s.match(/^(\d+)\/(\d+)$/);
+    if(fracOnly){
+      const num = Number(fracOnly[1]);
+      const den = Number(fracOnly[2]);
+      if(!den) return NaN;
+      return num/den;
+    }
+
+    const cleaned = s.replace(/"/g,'');
+    const n = Number(cleaned);
+    return isFinite(n) ? n : NaN;
+  }
+
+  function gcd(a,b){a=Math.abs(a);b=Math.abs(b);while(b){[a,b]=[b,a%b]}return a||1}
+
+  function toMixedFraction(x, denom){
+    if(!isFinite(x)) return '—';
+    const neg = x < 0;
+    const ax = Math.abs(x);
+    const whole = Math.floor(ax + 1e-10);
+    const frac = ax - whole;
+
+    let num = Math.round(frac * denom);
+    let w = whole;
+    if(num === denom){ w += 1; num = 0; }
+
+    if(num === 0) return (neg?'-':'') + String(w) + '"';
+
+    const g = gcd(num, denom);
+    num /= g;
+    const den = denom / g;
+
+    if(w === 0) return (neg?'-':'') + `${num}/${den}"`;
+    return (neg?'-':'') + `${w} ${num}/${den}"`;
+  }
+
+  function mround(value, step){
+    if(!isFinite(value) || !isFinite(step) || step === 0) return NaN;
+    return Math.round(value / step) * step;
+  }
+
+  let roundStep = 1/8;
+  const round8 = document.getElementById('round8');
+  const round16 = document.getElementById('round16');
+
+  function setRound(step){
+    roundStep = step;
+    round8.setAttribute('aria-pressed', String(step===1/8));
+    round16.setAttribute('aria-pressed', String(step===1/16));
+    calcClear();
+  }
+
+  round8.addEventListener('click', ()=>setRound(1/8));
+  round16.addEventListener('click', ()=>setRound(1/16));
+
+  function fmt(x){
+    return toMixedFraction(x, 16);
+  }
+
+  const CLEAR_TYPES = [
+    { key:'permashield', label:'Permashield', calc:(B4)=> (B4/2) - 7.5 },
+    { key:'narroline2', label:'Narroline gliding door 2-Panel', calc:(B4)=> (B4/2) - 7.5 },
+    { key:'narroline4', label:'Narroline gliding door 4-Panel', calc:(B4)=> (B4/2) - 13.75 },
+    { key:'frenchwood', label:'French wood Gliding door', calc:(B4)=> (B4/2) - 8.368 },
+    { key:'a_series_glide', label:'A-Series Traditional/Contemporary Frenchwood Gliding Door', calc:(B4)=> (B4/2) - 7.773 },
+    { key:'a_hinged_single', label:'A-Series Hinged Single panel', calc:(B4)=> B4 - 5.799 },
+    { key:'a_hinged_2open', label:'A-Series Hinged 2-panel (2 panels open)', calc:(B4)=> B4 - 7.477 },
+    { key:'a_hinged_1open', label:'A-Series Hinged 2-panel (1 panel open)', calc:(B4)=> (B4 - 8.992)/2 },
+    { key:'a_hinged_3_1open', label:'A-Series Hinged 3-panel (1 panel open)', calc:(B4)=> (B4 - 12.072)/3 },
+  ];
+
+  function fillSelect(){
+    const sel = document.getElementById('cl_type');
+    sel.innerHTML = '';
+    for(const it of CLEAR_TYPES){
+      const o = document.createElement('option');
+      o.value = it.key;
+      o.textContent = it.label;
+      sel.appendChild(o);
+    }
+  }
+
+  function calcClear(){
+    const size = parseInches(document.getElementById('cl_size').value);
+    const tKey = document.getElementById('cl_type').value;
+    const t = CLEAR_TYPES.find(x => x.key === tKey) || CLEAR_TYPES[0];
+    const raw = isFinite(size) ? t.calc(size) : NaN;
+    const out = isFinite(raw) ? mround(raw, roundStep) : NaN;
+    document.getElementById('cl_out').textContent = fmt(out);
+  }
+
+  const COMMON = ['1/16','1/8','3/16','1/4','5/16','3/8','7/16','1/2','9/16','5/8','3/4'];
+
+  function attachChips(){
+    document.querySelectorAll('.chips').forEach(box=>{
+      const inputId = box.getAttribute('data-for');
+      box.innerHTML = '';
+      for(const f of COMMON){
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'chip';
+        b.textContent = f;
+        b.addEventListener('click', ()=>{
+          const el = document.getElementById(inputId);
+          const cur = el.value.trim();
+          if(!cur){
+            el.value = f;
+          }else if(/^-?\d+$/.test(cur)){
+            el.value = cur + ' ' + f;
+          }else{
+            const parts = cur.replace(/-/g,' ').trim().split(/\s+/);
+            if(parts.length>=2 && /^\d+\/\d+$/.test(parts[parts.length-1])) parts[parts.length-1] = f;
+            else parts.push(f);
+            el.value = parts.join(' ');
+          }
+          el.dispatchEvent(new Event('input'));
+        });
+        box.appendChild(b);
+      }
+    });
+  }
+
+  async function copyResult(){
+    const text = `Clear opening: ${document.getElementById('cl_out').textContent}`;
+    try{
+      await navigator.clipboard.writeText(text);
+      alert('Copied to clipboard');
+    }catch{
+      prompt('Copy this:', text);
+    }
+  }
+
+  function resetForm(){
+    document.getElementById('cl_size').value = '';
+    document.getElementById('cl_type').selectedIndex = 0;
+    calcClear();
+  }
+
+  fillSelect();
+  attachChips();
+
+  document.getElementById('cl_size').addEventListener('input', calcClear);
+  document.getElementById('cl_type').addEventListener('change', calcClear);
+  document.getElementById('resetBtn').addEventListener('click', resetForm);
+  document.getElementById('copyBtn').addEventListener('click', copyResult);
+
+  calcClear();
+</script>
+</body>
+</html>
